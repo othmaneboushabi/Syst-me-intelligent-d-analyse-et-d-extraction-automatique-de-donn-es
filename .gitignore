@@ -1,15 +1,64 @@
- 
+# ─────────────────────────────────────────
+# Environnement Python
+# ─────────────────────────────────────────
+venv/
+.venv/
 __pycache__/
 *.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+.Python
+
+# ─────────────────────────────────────────
+# Données (trop lourdes pour GitHub)
+# ─────────────────────────────────────────
+data/raw/
+data/processed/
+data/samples/
+
+# ─────────────────────────────────────────
+# Modèles entraînés
+# ─────────────────────────────────────────
+models/
 *.h5
 *.pkl
 *.pt
+*.pth
+*.onnx
+*.tflite
+
+# ─────────────────────────────────────────
+# Variables d'environnement
+# ─────────────────────────────────────────
 .env
-venv/
-.venv/
-data/raw/
-data/processed/
-models/
-*.egg-info/
+.env.local
+.env.*.local
+
+# ─────────────────────────────────────────
+# Jupyter Notebooks (checkpoints)
+# ─────────────────────────────────────────
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
+
+# ─────────────────────────────────────────
+# Logs et résultats
+# ─────────────────────────────────────────
+logs/
+*.log
+runs/
+outputs/
+
+# ─────────────────────────────────────────
+# Cache Hugging Face
+# ─────────────────────────────────────────
+.cache/
+*.cache
+
+# ─────────────────────────────────────────
+# Système
+# ─────────────────────────────────────────
 .DS_Store
 Thumbs.db
+desktop.ini

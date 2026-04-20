@@ -10,9 +10,7 @@ from tqdm import tqdm
 # Configuration
 # ─────────────────────────────────────────
 IMG_SIZE = (224, 224)       # Taille attendue par ResNet50
-DATA_RAW_SROIE    = "data/raw/sroie/train/img"
-DATA_RAW_INVOICES = "data/raw/invoices"
-DATA_OUTPUT       = "data/processed"
+DATA_OUTPUT = "data/processed"
 
 # ─────────────────────────────────────────
 # 1. Chargement et redimensionnement
@@ -22,6 +20,8 @@ def load_and_resize(image_path: str) -> np.ndarray:
     img = cv2.imread(image_path)
     if img is None:
         raise ValueError(f"Image introuvable : {image_path}")
+    if img.size == 0:
+        raise ValueError(f"Image vide : {image_path}")
     img = cv2.resize(img, IMG_SIZE)
     return img
 
@@ -65,7 +65,7 @@ def normalize(img: np.ndarray) -> np.ndarray:
 # 5. Pipeline complet sur une image
 # ─────────────────────────────────────────
 def preprocess_image(image_path: str) -> np.ndarray:
-    """Applique le pipeline complet sur une image."""
+    """Applique le pipeline complet sur une image (resize + deskew + normalize)."""
     img = load_and_resize(image_path)
     img = deskew(img)
     img = normalize(img)
@@ -92,7 +92,6 @@ def preprocess_folder(input_dir: str, output_dir: str, label: str):
         try:
             img = load_and_resize(str(img_path))
             img = deskew(img)
-            # Sauvegarde en BGR (avant normalisation float)
             out_file = output_path / img_path.name
             cv2.imwrite(str(out_file), img)
         except Exception as e:
@@ -113,8 +112,8 @@ def split_dataset(processed_dir: str, label: str):
         print(f"Aucune image trouvée dans {source}")
         return
 
-    train, temp   = train_test_split(images, test_size=0.30, random_state=42)
-    val,   test   = train_test_split(temp,   test_size=0.50, random_state=42)
+    train, temp = train_test_split(images, test_size=0.30, random_state=42)
+    val,   test = train_test_split(temp,   test_size=0.50, random_state=42)
 
     for split_name, split_files in [("train", train), ("val", val), ("test", test)]:
         dest = Path(processed_dir) / split_name / label
@@ -129,17 +128,36 @@ def split_dataset(processed_dir: str, label: str):
 # ─────────────────────────────────────────
 if __name__ == "__main__":
     labels = {
-        "recu":    DATA_RAW_SROIE,
-        "facture": DATA_RAW_INVOICES + "/train",
+        "recu":            "data/raw/sroie/train/img",
+        "facture":         "data/raw/invoices/train",
+        "bon_de_commande": "data/raw/rvlcdip/bon_de_commande",
+        "releve_bancaire": "data/raw/rvlcdip/releve_bancaire",
+        "contrat":         "data/raw/rvlcdip/contrat",
     }
 
     print("=== Preprocessing des images ===")
+    print(f"Classes à traiter : {list(labels.keys())}\n")
+
+    total_images = 0
+
     for label, input_dir in labels.items():
         if os.path.exists(input_dir):
             preprocess_folder(input_dir, DATA_OUTPUT, label)
             split_dataset(DATA_OUTPUT, label)
         else:
-            print(f"Dossier introuvable : {input_dir} — ignoré")
+            print(f"[ATTENTION] Dossier introuvable : {input_dir} — ignoré")
+        print()
 
-    print("\n=== Preprocessing terminé ===")
+    print("=== Preprocessing terminé ===")
     print(f"Données prêtes dans : {DATA_OUTPUT}/")
+    print()
+
+    # Résumé final
+    print("=== Résumé du dataset ===")
+    for split in ["train", "val", "test"]:
+        split_path = Path(DATA_OUTPUT) / split
+        if split_path.exists():
+            total = sum(len(list(Path(split_path / label).glob("*")))
+                       for label in labels.keys()
+                       if (split_path / label).exists())
+            print(f"  {split:6s} : {total} images")
